@@ -63,23 +63,23 @@ module EnsembleScheduler
 
   class Scorer
     def score(teams, rooms, blocks)
-      result = []
-
       print UTF8BOM
       csv = CSV.new($stdout)
-      csv << ["score"] + 1.upto(blocks).map{|i| "block#{i}" }
+      csv << ["score", "conflicts"] + 1.upto(blocks).map{|i| "block#{i}" }
 
       split_number(teams.size, rooms, blocks).each{|rooms|
         fill_rooms(teams, rooms).each do |teams_in_rooms|
           score = 0
+          conflicts = Set.new
           teams_in_rooms.each{|teams_in_room|
             teams_in_room.combination(2).each do |t1, t2|
+              c = (t1.members & t2.members)
+              c.each{|m| conflicts << m }
               # 被ってる延べ人数
-              score -= (t1.members & t2.members).size
+              score -= c.size
             end
           }
-          result << {score: score, teams_in_rooms: teams_in_rooms}
-          csv << [score] + teams_in_rooms.map{|teams| teams.map(&:name).join(" / ") }
+          csv << [score, conflicts.to_a.join("、")] + teams_in_rooms.map{|teams| teams.map(&:name).join(" / ") }
         end
       }
     end
