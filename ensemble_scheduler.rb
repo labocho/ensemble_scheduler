@@ -47,7 +47,8 @@ module EnsembleScheduler
 
   Team = Struct.new(:name, :members) do
     def self.load(file)
-      data = YAML.load_file("tmp/data.yml")
+      data = YAML.load_file(file)
+      data["exclude"] ||= []
       data["teams"].each{|team|
         team["members"] -= data["exclude"]
       }
