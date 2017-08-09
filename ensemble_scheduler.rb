@@ -5,12 +5,14 @@ require "set"
 require "csv"
 
 module EnsembleScheduler
+  UTF8BOM = "\xef\xBB\xBF"
+
   class CLI < Thor
     desc "conflict FILE", "Show member conflicts for each team combinations"
     def conflict(file)
       teams = Team.load(file)
 
-      print "\xef\xBB\xBF"
+      print UTF8BOM
       csv = CSV.new($stdout)
       csv << ["team1", "team2", "score", "detail"]
       teams.permutation(2){|t1, t2|
@@ -27,6 +29,20 @@ module EnsembleScheduler
 
       Scorer.new.score(teams, rooms,  blocks)
     end
+
+    desc "teams FILE", "Show members of teams"
+    def teams(file)
+      teams = Team.load(file).sort_by(&:name)
+
+
+      print UTF8BOM
+      csv = CSV.new($stdout)
+      csv << ["member"] + teams.map(&:name)
+      players = teams.flat_map{|t| t.members.to_a }.sort.uniq
+      players.each do |player|
+        csv << [player] + teams.map{|t| t.member?(player) ? "v" : nil }
+      end
+    end
   end
 
   Team = Struct.new(:name, :members) do
@@ -39,13 +55,17 @@ module EnsembleScheduler
         Team.new(d["name"], Set.new(d["members"]))
       }
     end
+
+    def member?(s)
+      members.include?(s)
+    end
   end
 
   class Scorer
     def score(teams, rooms, blocks)
       result = []
 
-      print "\xef\xBB\xBF"
+      print UTF8BOM
       csv = CSV.new($stdout)
       csv << ["score"] + 1.upto(blocks).map{|i| "block#{i}" }
 
